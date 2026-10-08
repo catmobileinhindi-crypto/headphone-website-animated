@@ -1,0 +1,42 @@
+name: Import Auralith Website
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  import-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download project archive
+        run: |
+          python -m pip install --quiet gdown
+          gdown --id 10eXJWOmwxc6yIYfqKYMuVjUC1ovgkDn5 -O /tmp/project.zip
+          test -s /tmp/project.zip
+
+      - name: Replace repository with project
+        run: |
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          unzip -o /tmp/project.zip -d .
+          rm -f .github/workflows/import-project.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+
+      - name: Commit complete website
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Upload complete Auralith animated headphone website"
+          git push origin HEAD:main
